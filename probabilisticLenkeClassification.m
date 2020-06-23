@@ -1,6 +1,10 @@
-function [CT_prob, LM_prob, STM_prob] = probabilisticLenkeClassification(coronalCobb,coronalBendCobb,sagittalCobb,lumbarModifier)
+function [CT_prob, STM_prob] = probabilisticLenkeClassification(coronalCobb,coronalBendCobb,sagittalCobb)
 %PROBABILISTICLENKECLASSIFICATION: calculates the probability of each Lenke
 %classification, given the inherent interobserver variability
+%
+% estimating the probability of each curve type / sagittal thoracic modifier 
+% assuming the measured Cobb lies in the center of normal distribution which 
+% represents the true underlying Cobb
 %
 % inputs:
 % coronalCobb(1) = PT angle
@@ -12,16 +16,10 @@ function [CT_prob, LM_prob, STM_prob] = probabilisticLenkeClassification(coronal
 % sagittalCobb(1) = T2-T5 kyphosis angle
 % sagittalCobb(2) = T5-T12 kyphosis angle
 % sagittalCobb(3) = T10-L2 kyphosis angle
-% lumbarModifier = Lumbar modifier (A - CSVL between ALV pedicles, B - CSVL touching ALV pedicles, C - CSVL outside ALV pedicles)
 %
 % outputs:
 % CT_prob = probability of each curve-type (1-6 -> 1-6)
-% LM_prob = probability of each lumbar modifier (1,2,3 -> a,b,c)
 % STM_prob = probability of each sagittal thoracic modifier (1,2,3 -> -,n,+)
-
-%%%%%% estimate probability of each curve type / sagittal thoracic modifier
-%%%%%% assuming measured Cobb lies in the center of normal distribution
-%%%%%% which represents the true underlying Cobb
 
 % standard deviation of estimated Cobb angle around the 'true' underlying 
 % angle divided into different SD for coronal and sagittal, and different
@@ -30,10 +28,6 @@ function [CT_prob, LM_prob, STM_prob] = probabilisticLenkeClassification(coronal
 % bend PT SD = ...
 CoronalCobb_SD = 3;
 SagittalCobb_SD = 4;
-
-% percent agreement of lumbar modifier is used to estimate the probability
-% of misclassification
-LM_PA = 0.9;
 
 % initialise outputs
 CT_prob = zeros(1, 6); % curve-type probabilities
@@ -82,22 +76,6 @@ CT_prob(3) = p_minorNonStructural(1) * p_mt_major * p_minorStructural(3);
 CT_prob(4) = (p_minorStructural(1) * p_mt_major * p_minorStructural(3)) + (p_minorStructural(1) * p_minorStructural(2) * p_tl_major);
 CT_prob(5) = p_minorNonStructural(1) * p_minorNonStructural(2) * p_tl_major;
 CT_prob(6) = p_minorNonStructural(1) * p_minorStructural(2) * p_tl_major;
-
-%% Lumbar modifier criteria
-switch lumbarModifier
-    case 'A'
-        LM_prob(1) = LM_PA;
-        LM_prob(2) = 0.75*(1-LM_PA); % should it be more likely to land on pedicle?? pedicle is quite narrow...
-        LM_prob(3) = 0.25*(1-LM_PA);
-    case 'B'
-        LM_prob(1) = 0.5*(1-LM_PA);
-        LM_prob(2) = LM_PA;
-        LM_prob(3) = 0.5*(1-LM_PA);
-    case 'C'
-        LM_prob(1) = 0.25*(1-LM_PA);
-        LM_prob(2) = 0.75*(1-LM_PA);
-        LM_prob(3) = LM_PA;
-end
 
 %% Sagittal thoracic modifier
 STM_prob(1) = normcdf(10,sagittalCobb(2),SagittalCobb_SD);
