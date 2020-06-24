@@ -1,4 +1,4 @@
-function [CT_prob, STM_prob] = probabilisticLenkeClassification(coronalCobb,coronalBendCobb,sagittalCobb)
+function [CT_prob, STM_prob] = probabilisticLenkeClassification(coronalCobb,coronalBendCobb,sagittalCobb,CoronalCobb_SD,SagittalCobb_SD)
 %PROBABILISTICLENKECLASSIFICATION: calculates the probability of each Lenke
 %classification, given the inherent interobserver variability
 %
@@ -17,17 +17,17 @@ function [CT_prob, STM_prob] = probabilisticLenkeClassification(coronalCobb,coro
 % sagittalCobb(2) = T5-T12 kyphosis angle
 % sagittalCobb(3) = T10-L2 kyphosis angle
 %
+% standard deviation of estimated Cobb angle around the 'true' underlying 
+% angle divided into different SD for coronal and sagittal, and different
+% SD for different angles:
+% CoronalCobb_SD = standard deviation in interobserver variability of coronal cobb angles
+% SagittalCobb_SD = standard deviation in interobserver variability of sagittal cobb angles
+% Could be further divided into SD for each individual angle - e.g. coronal
+% bend PT SD = ...
+%
 % outputs:
 % CT_prob = probability of each curve-type (1-6 -> 1-6)
 % STM_prob = probability of each sagittal thoracic modifier (1,2,3 -> -,n,+)
-
-% standard deviation of estimated Cobb angle around the 'true' underlying 
-% angle divided into different SD for coronal and sagittal, and different
-% SD for different angles.
-% Could be further divided into SD for each individual angle - e.g. coronal
-% bend PT SD = ...
-CoronalCobb_SD = 3;
-SagittalCobb_SD = 4;
 
 % initialise outputs
 CT_prob = zeros(1, 6); % curve-type probabilities
@@ -86,13 +86,23 @@ end
 
 
 function [prob] = probAGreaterThanB(angA, angB, cobb_SD)
-    step = 0:0.01:180;
-    angA_pdf = normpdf(step,angA,cobb_SD);
-    angB_pdf = normpdf(step,angB,cobb_SD);
-    if angA > angB
-        prob = (1-(trapz(min(angA_pdf, angB_pdf))/(2*trapz(angA_pdf))));
+    if cobb_SD ~= 0
+        step = 0:0.01:180;
+        angA_pdf = normpdf(step,angA,cobb_SD);
+        angB_pdf = normpdf(step,angB,cobb_SD);
+        if angA > angB
+            prob = (1-(trapz(min(angA_pdf, angB_pdf))/(2*trapz(angA_pdf))));
+        else
+            prob = (trapz(min(angA_pdf, angB_pdf))/(2*trapz(angA_pdf)));
+        end
     else
-        prob = (trapz(min(angA_pdf, angB_pdf))/(2*trapz(angA_pdf)));
+        if angA > angB
+            prob = 1;
+        elseif angA == angB
+            prob = 0.5;
+        else
+            prob = 0;
+        end
     end
 end
 
